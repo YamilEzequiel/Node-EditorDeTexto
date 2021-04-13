@@ -1,12 +1,12 @@
 const fs = require('fs');
-const os = require('os')
+const os = require('os');
 
 class Document{
 
     constructor(dir){
-        this._constent = '';
+        this._content = '';
         this._isSaved = false;
-        this._filname = '';
+        this._filename = '';
         this._dir = dir;
     }
 
@@ -15,38 +15,35 @@ class Document{
     }
 
     append(text){
-        this._content += os.EOL+text;
+        this._content += os.EOL + text;
         this._isSaved = false;
     }
 
     saveas(name){
-        fs.writeFileSync(`${this._dir}/${name}`,this._constent);
-
+        fs.writeFileSync(`${this._dir}/${name}`, this._content);
+        this._filename = name;
         this._isSaved = true;
-        this._filname = name;
     }
 
     save(){
-        fs.writeFileSync(`${this._dir}/${this._filname}`,this._constent);
-
+        fs.writeFileSync(`${this._dir}/${this._filename}`, this._content);
         this._isSaved = true;
-        this._filname = this._filname;
+        this._filename = this._filename;
     }
 
     getContent(){
-        return this._constent;
+        return this._content;
     }
 
     hasName(){
-        if(this._filname != ''){
+        if(this._filename != ''){
             return true;
         }else{
             return false;
         }
     }
-
     getName(){
-        return this._filname;
+        return this._filename;
     }
 
     isSaved(){
@@ -54,8 +51,8 @@ class Document{
     }
 
     open(name){
-        this._content = fs.readFileSync(`${this._dir}/${name}`, 'utf-8');
-        this._filname = name;
+        this._content = fs.readFileSync(`${this._dir}/${name}`, 'UTF-8');
+        this._filename = name;
         this._isSaved = true;
         return this._content;
     }

@@ -3,123 +3,126 @@ const Messages = require('./messages');
 const Document = require('./document');
 const Directory = require('./directory');
 
-
 const dir = new Directory();
 
-let interface = readline.createInterface(process.stdin,process.stdout);
+let interface = readline.createInterface(process.stdin, process.stdout);
 
-const tools = `Comandos :q = salir, :sa = guardar como, :s = guardar
-==================================================================`;
 
+const tools =`Comandos: :q = salir, :sa = guardar como, :s = guardar
+--------------------------------------`
 const pantalla = `
-                ================
-                Editor de texto.\n
-                ================
-                Elige una opcion:\n
-                1 Crear nuevo documento
-                2 Abrir documento
-                3 Cerrar editor\n>`;
+                    ================
+                    Editor de texto.\n
+                    ================
+                    Elige una opcion:\n
+                    1 Crear nuevo documento
+                    2 Abrir documento
+                    3 Cerrar editor\n> `;
 
 mainScreen();
-
 function mainScreen(){
     process.stdout.write('\033c');
-
-    interface.question(pantalla,res=>{
-        switch (res.trim()) {
+    interface.question(pantalla, (res) =>{
+        switch(res.trim()){
             case '1':
-                    createFile();
-                break;
-        
+            createFile();
+            break;
+    
             case '2':
-                    openFileInterface();
-                break;
+            openFileInterface();
+            break;
+    
             case '3':
-                    interface.close();
-                break;      
-            
+            interface.close();
+            break;
+    
             default:
-                mainScreen()
-        }
+            mainScreen();
+        } 
     });
+}
 
+function readCommands(file){
+    interface.on('line', (input)=>{
+        switch(input.trim()){
+            case ':sa':
+                saveAs(file);
+            break;
+            
+            case ':q':
+                interface.removeAllListeners('line');
+                mainScreen();
+            break;
+
+            case ':s':
+                save(file);
+            break;
+
+            default:
+                file.append(input.trim());
+        }
+    })
+}
 
 function createFile(){
-    //Creamos el archivo
-    let file=new Document(dir.getPath());
-
-    //Renderizar la interface
+    let file = new Document(dir.getPath());
+    
     renderInterface(file);
-    renderCommands(file);
+    readCommands(file);
+}
+
+function save(file){
+    if(file.hasName()){
+        file.save()
+        renderInterface(file, `${Messages.fileSaved}\n`);
+    }else{
+        saveAs(file);
+    }
+}
+
+function saveAs(file){
+    interface.question(Messages.requestFileName, (name) =>{
+        if(file.exists(name)){
+            console.log(Messages.fileExists);
+                interface.question(Messages.replaceFile, (confirm)=>{
+                    if(confirm == 'y'){
+                        file.saveas(name);
+                        renderInterface(file, `${Messages.fileSaved}\n`);
+                    }else{
+                        renderInterface(file, `${Messages.fileNotSaved}\n`);
+                    }
+                });
+        }else{
+            file.saveas(name);
+            renderInterface(file, `${Messages.fileSaved}\n`);
+        }
+    });
+}
+
+function openFile(file, name){
+    content = file.open(name);
+    renderInterface(file);
+    readCommands(file);
+}
+
+function renderInterface(file, mensaje){
+    process.stdout.write('\033c');
+    (file.getName() == '') ? console.log(`| Untitled |`) : console.log(`| ${file.getName()} |`);
+    console.log(tools);
+    if(mensaje != null) console.log(mensaje);
+    console.log(file.getContent());
 }
 
 function openFileInterface(){
     let file = new Document(dir.getPath());
     dir.getFilesInDir();
-}
-
-
-function renderInterface(file, mesaje){
-    //Limpiando la pantalla
-    process.stdout.write('\033c');
-
-    (file.getName() == '') ? console.log(`| Untitled |`) : console.log(`| ${file.getName()} |`);
-
-    console.log(tools);
-
-    if(mesaje != null) console.log(mesaje);
-    console.log(file.getContent())
-}
-
-function renderCommands(file){
-    interface.on('line', input=>{
-        switch (input.trim()) {
-            case ':sa':
-                saveas(file);
-                break;
-            case ':q':
-                interface.removeAllListeners('line');
-                mainScreen();
-                break;
-            case ':s':
-                save(file);
-                break;
-            default:
-                file.append(input.trim());
-        }
-    });
-}
-
-
-function saveas(file){
-    interface.question(Messages.requestFileName, name=>{
-        if(file.exists()){
-            console.log(Messages.fileExists);
-            interface.question(Messages.replaceFile,confirm=>{
-                if(confirm='y'){
-                    file.saveas(name);
-                    renderInterface(file,Messages.fileSaves + '\n');
-                }else{
-                    renderInterface(file,Messages.fileNotSaves + '\n')
-                }
-            })
+    interface.question(Messages.requestFileName, (name) =>{
+        if(file.exists(name)){
+            openFile(file, name);
         }else{
-            //El archivo no existe y se tiene que crear
-            file.saveas(name);
-            renderInterface(file, Messages.fileSaves + '\n');
+            console.log(Messages.fileNotFound);
+            interface.removeAllListeners('line');  
+            mainScreen();      
         }
     });
-}
-
-function save(file){
-    if(file.hasName()){
-        file.save();
-        renderInterface(file,Messages.fileSaves + '\n');
-    }else{
-        saveas(file);
-    }
-}
-
-
-
 }
